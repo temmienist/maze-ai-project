@@ -117,7 +117,7 @@ clock = pygame.time.Clock()
 # Busca heurística com animação
 path, explored, steps = heuristic_search(screen, maze, start, end)
 
-print(f"Total steps: {steps}")
+print(f"Total de passos: {steps}")
 
 running = True
 while running:
