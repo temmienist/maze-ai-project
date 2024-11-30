@@ -49,14 +49,14 @@ def dfs_with_animation(screen, maze, start, end):
         explored.append(current)
         steps += 1  # Incrementa o contador de passos
 
-        # Verifica se chegamos ao destino
+        # Verifica se alcançou o objetivo
         if current == end:
             # Reconstruir o caminho
             path = []
             while current:
                 path.append(current)
                 current = parent.get(current)
-            return path[::-1], explored, steps   # Retorna o caminho, as células exploradas e o número de passos
+            return path[::-1], explored, steps   # Retorna o caminho e o número de passos
 
         for dx, dy in directions[::-1]:
             neighbor = (current[0] + dx, current[1] + dy)

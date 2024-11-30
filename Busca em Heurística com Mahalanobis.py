@@ -1,5 +1,6 @@
 import pygame
-from collections import deque
+import numpy as np
+from heapq import heappop, heappush
 import time
 
 # Dimensões do labirinto e configuração
@@ -37,73 +38,86 @@ end = (10, 0)  # Fim
 # Direções possíveis (cima, esquerda, direita, baixo)
 directions = [(-1, 0), (0, -1), (0, 1), (1, 0)]
 
-def bfs_with_animation(screen, maze, start, end):
-    queue = deque([start])
-    visited = set()
-    visited.add(start)
-    parent = {}  # Para rastrear o caminho
-    explored = []  # Para visualização em tempo real
-    steps = 0  # Contador de passos
+# Matriz de covariância para cálculo da distância de Mahalanobis
+covariance = np.array([[1, 0], [0, 1]])
+inv_cov = np.linalg.inv(covariance)
 
-    while queue:
-        current = queue.popleft()
+def mahalanobis_distance(point1, point2):
+    # Calcula a distância de Mahalanobis entre dois pontos.
+    diff = np.array(point1) - np.array(point2)
+    return np.sqrt(np.dot(np.dot(diff.T, inv_cov), diff))
+
+
+def heuristic_search(screen, maze, start, end):
+    # Busca heurística usando distância de Mahalanobis.
+    priority_queue = []
+    heappush(priority_queue, (0, start))  # Fila de prioridade
+    visited = set()
+    parent = {}
+    explored = []
+    steps = 0
+
+    while priority_queue:
+        _, current = heappop(priority_queue)
         explored.append(current)
-        steps += 1  # Incrementa o contador de passos
+        steps += 1
 
         # Verifica se alcançou o objetivo
         if current == end:
-            # Reconstruir o caminho
             path = []
             while current:
                 path.append(current)
                 current = parent.get(current)
-            return path[::-1], explored, steps  # Retorna o caminho e o número de passos
+            return path[::-1], explored, steps
 
+        if current in visited:
+            continue
+        visited.add(current)
+
+        # Adiciona os vizinhos na fila de prioridade
         for dx, dy in directions:
             neighbor = (current[0] + dx, current[1] + dy)
-
             if (
                 0 <= neighbor[0] < GRID_SIZE
                 and 0 <= neighbor[1] < GRID_SIZE
                 and neighbor not in visited
                 and maze[neighbor[0]][neighbor[1]] == 1
             ):
-                queue.append(neighbor)
-                visited.add(neighbor)
+                cost = mahalanobis_distance(neighbor, end)
+                heappush(priority_queue, (cost, neighbor))
                 parent[neighbor] = current
 
         # Atualiza a tela para mostrar a exploração
         draw_maze(screen, maze, start, end, explored, [])
         pygame.display.flip()
-        time.sleep(0.2)  # Controla a velocidade da exploração
+        time.sleep(0.2)
 
     return [], explored, steps
 
+
 def draw_maze(screen, maze, start, end, explored, path):
+    # Desenha o labirinto na tela.
     for row in range(GRID_SIZE):
         for col in range(GRID_SIZE):
             color = WHITE if maze[row][col] == 1 else BLACK
             pygame.draw.rect(screen, color, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE))
-
-            # Adiciona linhas de grade
             pygame.draw.rect(screen, GRAY, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE), 1)
 
-    # Células exploradas
     for pos in explored:
         pygame.draw.rect(screen, BLUE, (pos[1] * CELL_SIZE, pos[0] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
 
-    # Destacar os pontos de início e fim
     pygame.draw.rect(screen, GREEN, (start[1] * CELL_SIZE, start[0] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
     pygame.draw.rect(screen, RED, (end[1] * CELL_SIZE, end[0] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
 
 pygame.init()
 screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
-pygame.display.set_caption("Busca em Largura")
+pygame.display.set_caption("Busca em Heurística com Mahalanobis")
 clock = pygame.time.Clock()
 
-path, explored, steps = bfs_with_animation(screen, maze, start, end)
+# Busca heurística com animação
+path, explored, steps = heuristic_search(screen, maze, start, end)
 
-print(f"Total de passos: {steps}")
+print(f"Total steps: {steps}")
 
 running = True
 while running:
@@ -112,7 +126,6 @@ while running:
             running = False
 
     draw_maze(screen, maze, start, end, explored, path)
-
     pygame.display.flip()
     clock.tick(FPS)
 
