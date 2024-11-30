@@ -9,4 +9,5 @@ Este projeto implementa diferentes algoritmos de busca para resolver um problema
 ![python_fyuohCWZFy](https://github.com/user-attachments/assets/60bf2bd2-5c32-49be-b427-c76e54190b53)
 
 # Requisitos
+Python: https://www.python.org/  
 Pygame: https://www.pygame.org/
